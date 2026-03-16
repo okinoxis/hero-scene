@@ -3,107 +3,35 @@
 import Image from 'next/image'
 import { useEffect, useRef, useState } from 'react'
 
+import { HeroSceneContext, useHeroScene } from './hero-scene-context'
 import type {
-  BlurConfig,
-  DarkModeConfig,
+  BlurProps,
+  ContentProps,
+  DarkOverlayProps,
   HeroSceneProps,
-  ParallaxConfig,
-  PatternConfig,
-  VignetteConfig,
+  ParallaxProps,
+  PatternProps,
+  VignetteProps,
 } from './types'
 import { buildBlurMask, buildVignetteGradient } from './utils'
+import { useInViewport } from './use-in-viewport'
+import { useReducedMotion } from './use-reduced-motion'
 
-// ─── Defaults ────────────────────────────────────────────────
-const DEFAULTS = {
-  interval: 30_000,
-  transitionDuration: 700,
-  parallax: {
-    speed: 0.4,
-    mouseShiftX: 25,
-    mouseShiftY: 15,
-    mouseLerp: 0.04,
-  } satisfies Required<ParallaxConfig>,
-  vignette: {
-    enabled: true,
-    centerX: 50,
-    centerY: 100,
-    shape: 'circle' as const,
-    stops: [
-      [0, 0],
-      [15, 0.08],
-      [30, 0.15],
-      [45, 0.25],
-      [60, 0.35],
-      [75, 0.45],
-      [88, 0.55],
-      [100, 0.6],
-    ] as [number, number][],
-    transitionDuration: 1000,
-  } satisfies Required<VignetteConfig>,
-  blur: {
-    enabled: true,
-    amount: 24,
-    centerX: 50,
-    centerY: 65,
-    innerRadius: 15,
-    outerRadius: 55,
-  } satisfies Required<BlurConfig>,
-  pattern: {
-    enabled: true,
-    dotSize: 1,
-    spacing: 20,
-    lightColor: 'rgba(0 0 0 / 0.15)',
-    darkColor: 'rgba(255 255 255 / 0.1)',
-  } satisfies Required<PatternConfig>,
-  darkMode: {
-    imageFilter: 'saturate(0)',
-    overlay: true,
-    overlayOpacity: 0.4,
-  } satisfies Required<DarkModeConfig>,
-}
+// ─── Root Component ──────────────────────────────────────────
 
-// ─── Component ───────────────────────────────────────────────
-export function HeroScene({
+function HeroSceneRoot({
   images,
   initialIndex = 0,
-  interval = DEFAULTS.interval,
-  transitionDuration = DEFAULTS.transitionDuration,
+  interval = 30_000,
+  transitionDuration = 700,
   className,
-  parallax: parallaxProp,
-  vignette: vignetteProp,
-  blur: blurProp,
-  pattern: patternProp,
-  darkMode: darkModeProp,
   onIndexChange,
   children,
 }: HeroSceneProps) {
   const [index, setIndex] = useState(initialIndex)
-  const containerRef = useRef<HTMLDivElement>(null)
-  const scrollY = useRef(0)
-  const targetMouseX = useRef(0)
-  const targetMouseY = useRef(0)
-  const currentMouseX = useRef(0)
-  const currentMouseY = useRef(0)
-
-  // Resolve configs (false = disabled)
-  const parallax =
-    parallaxProp === false
-      ? null
-      : { ...DEFAULTS.parallax, ...parallaxProp }
-  const vignette =
-    vignetteProp === false
-      ? null
-      : { ...DEFAULTS.vignette, ...vignetteProp }
-  const blur =
-    blurProp === false ? null : { ...DEFAULTS.blur, ...blurProp }
-  const pattern =
-    patternProp === false
-      ? null
-      : { ...DEFAULTS.pattern, ...patternProp }
-  const darkMode =
-    darkModeProp === false
-      ? null
-      : { ...DEFAULTS.darkMode, ...darkModeProp }
+  const rootRef = useRef<HTMLDivElement>(null)
+  const reducedMotion = useReducedMotion()
+  const isInViewport = useInViewport(rootRef)
 
   // ── Image rotation ──
   useEffect(() => {
@@ -121,9 +49,109 @@ export function HeroScene({
     return () => clearInterval(id)
   }, [initialIndex, interval, images.length, onIndexChange])
 
-  // ── Parallax + mouse tracking ──
+  const activeColor = images[index]?.color ?? '128, 128, 128'
+
+  return (
+    <HeroSceneContext.Provider
+      value={{
+        images,
+        index,
+        transitionDuration,
+        reducedMotion,
+        isInViewport,
+        containerRef: rootRef,
+      }}
+    >
+      <div
+        ref={rootRef}
+        className={className}
+        style={{ position: 'relative', overflow: 'hidden' }}
+      >
+        {/* ── Background images (no parallax — Parallax child wraps these) ── */}
+        <div
+          data-hero-images=""
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            inset: 0,
+            backgroundColor: `rgb(${activeColor})`,
+            transition: reducedMotion ? 'none' : 'background-color 1s ease',
+          }}
+        >
+          {images.map((img, i) => (
+            <Image
+              key={img.src}
+              src={img.src}
+              alt=""
+              width={1920}
+              height={1080}
+              priority={i === initialIndex}
+              sizes="100vw"
+              style={{
+                position: 'absolute',
+                inset: 0,
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                opacity: i === index ? 1 : 0,
+                transition: reducedMotion
+                  ? 'none'
+                  : `opacity ${transitionDuration}ms ease`,
+              }}
+            />
+          ))}
+        </div>
+
+        {children}
+      </div>
+    </HeroSceneContext.Provider>
+  )
+}
+
+// ─── Parallax ────────────────────────────────────────────────
+
+function Parallax({
+  speed = 0.4,
+  mouseShiftX = 25,
+  mouseShiftY = 15,
+  mouseLerp = 0.04,
+}: ParallaxProps) {
+  const { reducedMotion, isInViewport, containerRef } = useHeroScene()
+
+  const scrollY = useRef(0)
+  const targetMouseX = useRef(0)
+  const targetMouseY = useRef(0)
+  const currentMouseX = useRef(0)
+  const currentMouseY = useRef(0)
+
   useEffect(() => {
-    if (!parallax) return
+    if (reducedMotion) return
+
+    const root = containerRef.current
+    if (!root) return
+
+    const imagesEl = root.querySelector<HTMLDivElement>('[data-hero-images]')
+    if (!imagesEl) return
+
+    // Expand the images container to allow parallax overflow
+    imagesEl.style.inset = '-15%'
+    imagesEl.style.willChange = 'transform'
+
+    return () => {
+      imagesEl.style.inset = '0'
+      imagesEl.style.willChange = ''
+      imagesEl.style.transform = ''
+    }
+  }, [reducedMotion, containerRef])
+
+  useEffect(() => {
+    if (reducedMotion) return
+
+    const root = containerRef.current
+    if (!root) return
+
+    const imagesEl = root.querySelector<HTMLDivElement>('[data-hero-images]')
+    if (!imagesEl) return
 
     let rafId: number
     let running = true
@@ -132,25 +160,25 @@ export function HeroScene({
       if (!running) return
 
       currentMouseX.current +=
-        (targetMouseX.current - currentMouseX.current) * parallax!.mouseLerp
+        (targetMouseX.current - currentMouseX.current) * mouseLerp
       currentMouseY.current +=
-        (targetMouseY.current - currentMouseY.current) * parallax!.mouseLerp
+        (targetMouseY.current - currentMouseY.current) * mouseLerp
 
-      if (containerRef.current) {
-        const y = scrollY.current * parallax!.speed
-        const mx = currentMouseX.current * parallax!.mouseShiftX
-        const my = currentMouseY.current * parallax!.mouseShiftY
-        containerRef.current.style.transform = `translate3d(${mx}px, ${y + my}px, 0)`
-      }
+      const y = scrollY.current * speed
+      const mx = currentMouseX.current * mouseShiftX
+      const my = currentMouseY.current * mouseShiftY
+      imagesEl!.style.transform = `translate3d(${mx}px, ${y + my}px, 0)`
 
       rafId = requestAnimationFrame(loop)
     }
 
     function onScroll() {
+      if (!isInViewport) return
       scrollY.current = globalThis.scrollY
     }
 
     function onMouseMove(e: MouseEvent) {
+      if (!isInViewport) return
       targetMouseX.current = (e.clientX / globalThis.innerWidth - 0.5) * 2
       targetMouseY.current = (e.clientY / globalThis.innerHeight - 0.5) * 2
     }
@@ -165,141 +193,173 @@ export function HeroScene({
       globalThis.removeEventListener('mousemove', onMouseMove)
       cancelAnimationFrame(rafId)
     }
-  }, [parallax])
+  }, [
+    reducedMotion,
+    isInViewport,
+    containerRef,
+    speed,
+    mouseShiftX,
+    mouseShiftY,
+    mouseLerp,
+  ])
 
-  const activeColor = images[index]?.color ?? '128, 128, 128'
-  const transitionMs = `${transitionDuration}ms`
-  const vignetteTransitionMs = vignette
-    ? `${vignette.transitionDuration}ms`
-    : '0ms'
+  // Parallax is a behavior-only component — renders nothing
+  return null
+}
+
+// ─── Vignette ────────────────────────────────────────────────
+
+function Vignette({
+  centerX = 50,
+  centerY = 100,
+  shape = 'circle',
+  stops,
+  transitionDuration = 1000,
+}: VignetteProps) {
+  const { images, index, reducedMotion } = useHeroScene()
+  const transitionMs = reducedMotion ? '0ms' : `${transitionDuration}ms`
+
+  return (
+    <>
+      {images.map((img, i) => (
+        <div
+          key={`vignette-${img.color}`}
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            inset: 0,
+            zIndex: 20,
+            pointerEvents: 'none',
+            opacity: i === index ? 1 : 0,
+            transition: `opacity ${transitionMs} ease`,
+            background: buildVignetteGradient(img.color, {
+              centerX,
+              centerY,
+              shape,
+              stops,
+            }),
+          }}
+        />
+      ))}
+    </>
+  )
+}
+
+// ─── Blur ────────────────────────────────────────────────────
+
+function Blur({
+  amount = 24,
+  centerX = 50,
+  centerY = 65,
+  innerRadius = 15,
+  outerRadius = 55,
+}: BlurProps) {
+  useHeroScene() // validate context
+
+  const mask = buildBlurMask({ centerX, centerY, innerRadius, outerRadius })
+
+  return (
+    <div
+      aria-hidden="true"
+      style={{
+        position: 'absolute',
+        inset: 0,
+        zIndex: 15,
+        backdropFilter: `blur(${amount}px)`,
+        WebkitBackdropFilter: `blur(${amount}px)`,
+        maskImage: mask,
+        WebkitMaskImage: mask,
+        pointerEvents: 'none',
+      }}
+    />
+  )
+}
+
+// ─── Pattern ─────────────────────────────────────────────────
+
+function Pattern({
+  dotSize = 1,
+  spacing = 20,
+  lightColor = 'rgba(0 0 0 / 0.15)',
+  darkColor = 'rgba(255 255 255 / 0.1)',
+}: PatternProps) {
+  useHeroScene() // validate context
+
+  const bgImage = (color: string) =>
+    `radial-gradient(circle, ${color} ${dotSize}px, transparent ${dotSize}px)`
+  const bgSize = `${spacing}px ${spacing}px`
+
+  return (
+    <>
+      <div
+        aria-hidden="true"
+        className="dark:hidden"
+        style={{
+          position: 'absolute',
+          inset: 0,
+          zIndex: 20,
+          pointerEvents: 'none',
+          backgroundImage: bgImage(lightColor),
+          backgroundSize: bgSize,
+        }}
+      />
+      <div
+        aria-hidden="true"
+        className="hidden dark:block"
+        style={{
+          position: 'absolute',
+          inset: 0,
+          zIndex: 20,
+          pointerEvents: 'none',
+          backgroundImage: bgImage(darkColor),
+          backgroundSize: bgSize,
+        }}
+      />
+    </>
+  )
+}
+
+// ─── DarkOverlay ─────────────────────────────────────────────
+
+function DarkOverlay({ opacity = 0.4 }: DarkOverlayProps) {
+  useHeroScene() // validate context
+
+  return (
+    <div
+      aria-hidden="true"
+      className="pointer-events-none hidden dark:block"
+      style={{
+        position: 'absolute',
+        inset: 0,
+        zIndex: 10,
+        backgroundColor: `rgba(0 0 0 / ${opacity})`,
+      }}
+    />
+  )
+}
+
+// ─── Content ─────────────────────────────────────────────────
+
+function Content({ className, children }: ContentProps) {
+  useHeroScene() // validate context
 
   return (
     <div
       className={className}
-      style={{ position: 'relative', overflow: 'hidden' }}
+      style={{ position: 'relative', zIndex: 30 }}
     >
-      {/* ── Background images with parallax ── */}
-      <div
-        ref={containerRef}
-        aria-hidden="true"
-        style={{
-          position: 'absolute',
-          inset: parallax ? '-15%' : '0',
-          willChange: parallax ? 'transform' : undefined,
-          backgroundColor: `rgb(${activeColor})`,
-          transition: 'background-color 1s ease',
-        }}
-      >
-        {images.map((img, i) => (
-          <Image
-            key={img.src}
-            src={img.src}
-            alt=""
-            width={1920}
-            height={1080}
-            priority={i === initialIndex}
-            sizes="100vw"
-            style={{
-              position: 'absolute',
-              inset: 0,
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover',
-              opacity: i === index ? 1 : 0,
-              transition: `opacity ${transitionMs} ease`,
-              filter:
-                darkMode?.imageFilter
-                  ? undefined
-                  : undefined,
-            }}
-            className={darkMode ? `dark:[filter:${darkMode.imageFilter}]` : undefined}
-          />
-        ))}
-      </div>
-
-      {/* ── Dark mode overlay ── */}
-      {darkMode?.overlay && (
-        <div
-          aria-hidden="true"
-          className="pointer-events-none hidden dark:block"
-          style={{
-            position: 'absolute',
-            inset: 0,
-            zIndex: 10,
-            backgroundColor: `rgba(0 0 0 / ${darkMode.overlayOpacity})`,
-          }}
-        />
-      )}
-
-      {/* ── Blur mask ── */}
-      {blur && (
-        <div
-          aria-hidden="true"
-          style={{
-            position: 'absolute',
-            inset: 0,
-            zIndex: 15,
-            backdropFilter: `blur(${blur.amount}px)`,
-            WebkitBackdropFilter: `blur(${blur.amount}px)`,
-            maskImage: buildBlurMask(blur),
-            WebkitMaskImage: buildBlurMask(blur),
-            pointerEvents: 'none',
-          }}
-        />
-      )}
-
-      {/* ── Vignette overlays — crossfade between colors ── */}
-      {vignette &&
-        images.map((img, i) => (
-          <div
-            key={`vignette-${img.color}`}
-            aria-hidden="true"
-            style={{
-              position: 'absolute',
-              inset: 0,
-              zIndex: 20,
-              pointerEvents: 'none',
-              opacity: i === index ? 1 : 0,
-              transition: `opacity ${vignetteTransitionMs} ease`,
-              background: buildVignetteGradient(img.color, vignette),
-            }}
-          />
-        ))}
-
-      {/* ── Dot pattern ── */}
-      {pattern && (
-        <>
-          <div
-            aria-hidden="true"
-            className="dark:hidden"
-            style={{
-              position: 'absolute',
-              inset: 0,
-              zIndex: 20,
-              pointerEvents: 'none',
-              backgroundImage: `radial-gradient(circle, ${pattern.lightColor} ${pattern.dotSize}px, transparent ${pattern.dotSize}px)`,
-              backgroundSize: `${pattern.spacing}px ${pattern.spacing}px`,
-            }}
-          />
-          <div
-            aria-hidden="true"
-            className="hidden dark:block"
-            style={{
-              position: 'absolute',
-              inset: 0,
-              zIndex: 20,
-              pointerEvents: 'none',
-              backgroundImage: `radial-gradient(circle, ${pattern.darkColor} ${pattern.dotSize}px, transparent ${pattern.dotSize}px)`,
-              backgroundSize: `${pattern.spacing}px ${pattern.spacing}px`,
-            }}
-          />
-        </>
-      )}
-
-      {/* ── Content (children) ── */}
-      {children && (
-        <div style={{ position: 'relative', zIndex: 30 }}>{children}</div>
-      )}
+      {children}
     </div>
   )
 }
+
+// ─── Compound export ─────────────────────────────────────────
+
+export const HeroScene = Object.assign(HeroSceneRoot, {
+  Parallax,
+  Vignette,
+  Blur,
+  Pattern,
+  DarkOverlay,
+  Content,
+})

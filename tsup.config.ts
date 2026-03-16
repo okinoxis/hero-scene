@@ -7,4 +7,11 @@ export default defineConfig({
   sourcemap: true,
   clean: true,
   external: ['react', 'react-dom', 'next'],
+  esbuildOptions(options) {
+    // Preserve "use client" directives in the output bundle.
+    // esbuild strips banner-like directives by default; this re-injects them.
+    options.banner = {
+      js: '"use client";',
+    }
+  },
 })

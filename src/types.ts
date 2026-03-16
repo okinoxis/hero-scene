@@ -5,7 +5,28 @@ export type HeroImage = {
   color: string
 }
 
-export type ParallaxConfig = {
+// ─── Root props ──────────────────────────────────────────────
+
+export type HeroSceneProps = {
+  /** Array of images to rotate through */
+  images: HeroImage[]
+  /** Index of the initial image to show. Default: 0 */
+  initialIndex?: number
+  /** Rotation interval in ms. 0 disables rotation. Default: 30000 */
+  interval?: number
+  /** Image transition duration in ms. Default: 700 */
+  transitionDuration?: number
+  /** Extra className for the container */
+  className?: string
+  /** Callback when the active image index changes */
+  onIndexChange?: (index: number) => void
+  /** Compound children — HeroScene.Parallax, HeroScene.Vignette, etc. */
+  children?: React.ReactNode
+}
+
+// ─── Compound component props ────────────────────────────────
+
+export type ParallaxProps = {
   /** Vertical parallax speed (0 = fixed, 1 = normal scroll). Default: 0.4 */
   speed?: number
   /** Max horizontal shift from mouse in px. Default: 25 */
@@ -16,9 +37,7 @@ export type ParallaxConfig = {
   mouseLerp?: number
 }
 
-export type VignetteConfig = {
-  /** Whether to show the vignette. Default: true */
-  enabled?: boolean
+export type VignetteProps = {
   /** Vignette shape center X position (%). Default: 50 */
   centerX?: number
   /** Vignette shape center Y position (%). Default: 100 */
@@ -32,9 +51,7 @@ export type VignetteConfig = {
   transitionDuration?: number
 }
 
-export type BlurConfig = {
-  /** Whether to show the blur mask. Default: true */
-  enabled?: boolean
+export type BlurProps = {
   /** Blur amount in px. Default: 24 (backdrop-blur-xl) */
   amount?: number
   /** Blur mask center X (%). Default: 50 */
@@ -47,9 +64,7 @@ export type BlurConfig = {
   outerRadius?: number
 }
 
-export type PatternConfig = {
-  /** Whether to show the dot pattern. Default: true */
-  enabled?: boolean
+export type PatternProps = {
   /** Dot size in px. Default: 1 */
   dotSize?: number
   /** Grid spacing in px. Default: 20 */
@@ -60,38 +75,25 @@ export type PatternConfig = {
   darkColor?: string
 }
 
-export type DarkModeConfig = {
-  /** Filter to apply to images in dark mode. Default: 'saturate(0)' */
-  imageFilter?: string
-  /** Whether to show an overlay in dark mode. Default: true */
-  overlay?: boolean
+export type DarkOverlayProps = {
   /** Overlay opacity. Default: 0.4 */
-  overlayOpacity?: number
+  opacity?: number
 }
 
-export type HeroSceneProps = {
-  /** Array of images to rotate through */
-  images: HeroImage[]
-  /** Index of the initial image to show. Default: 0 */
-  initialIndex?: number
-  /** Rotation interval in ms. 0 disables rotation. Default: 30000 */
-  interval?: number
-  /** Image transition duration in ms. Default: 700 */
-  transitionDuration?: number
-  /** Extra className for the container */
+export type ContentProps = {
+  /** Extra className for the content wrapper */
   className?: string
-  /** Parallax & mouse tracking config */
-  parallax?: ParallaxConfig | false
-  /** Vignette overlay config */
-  vignette?: VignetteConfig | false
-  /** Edge blur mask config */
-  blur?: BlurConfig | false
-  /** Dot pattern overlay config */
-  pattern?: PatternConfig | false
-  /** Dark mode behavior */
-  darkMode?: DarkModeConfig | false
-  /** Callback when the active image index changes */
-  onIndexChange?: (index: number) => void
-  /** Children rendered above all layers (for CTA content etc.) */
+  /** Content to render above all layers */
   children?: React.ReactNode
+}
+
+// ─── Internal context ────────────────────────────────────────
+
+export type HeroSceneContextValue = {
+  images: HeroImage[]
+  index: number
+  transitionDuration: number
+  reducedMotion: boolean
+  isInViewport: boolean
+  containerRef: React.RefObject<HTMLDivElement | null>
 }

@@ -1,4 +1,4 @@
-import type { VignetteConfig, BlurConfig } from './types'
+import type { VignetteProps, BlurProps } from './types'
 
 const DEFAULT_STOPS: [number, number][] = [
   [0, 0],
@@ -13,7 +13,7 @@ const DEFAULT_STOPS: [number, number][] = [
 
 export function buildVignetteGradient(
   color: string,
-  config: VignetteConfig,
+  config: Pick<VignetteProps, 'shape' | 'centerX' | 'centerY' | 'stops'>,
 ): string {
   const shape = config.shape ?? 'circle'
   const cx = config.centerX ?? 50
@@ -31,7 +31,9 @@ export function buildVignetteGradient(
   return `radial-gradient(${shape} at ${cx}% ${cy}%, ${gradientStops})`
 }
 
-export function buildBlurMask(config: BlurConfig): string {
+export function buildBlurMask(
+  config: Pick<BlurProps, 'centerX' | 'centerY' | 'innerRadius' | 'outerRadius'>,
+): string {
   const cx = config.centerX ?? 50
   const cy = config.centerY ?? 65
   const inner = config.innerRadius ?? 15

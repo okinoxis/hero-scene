@@ -1,12 +1,14 @@
 export { HeroScene } from './hero-scene'
 export { buildVignetteGradient, buildBlurMask } from './utils'
+export { useReducedMotion } from './use-reduced-motion'
 
 export type {
   HeroSceneProps,
   HeroImage,
-  ParallaxConfig,
-  VignetteConfig,
-  BlurConfig,
-  PatternConfig,
-  DarkModeConfig,
+  ParallaxProps,
+  VignetteProps,
+  BlurProps,
+  PatternProps,
+  DarkOverlayProps,
+  ContentProps,
 } from './types'
