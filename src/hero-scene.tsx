@@ -17,6 +17,19 @@ import { buildBlurMask, buildVignetteGradient } from './utils'
 import { useInViewport } from './use-in-viewport'
 import { useReducedMotion } from './use-reduced-motion'
 
+/**
+ * Injected once — handles dark mode via `.dark` ancestor class.
+ * Uses data-attributes so no Tailwind scanning is needed.
+ */
+const DARK_STYLES = `
+[data-hs-dark-only]{display:none}
+[data-hs-light-only]{display:block}
+[data-hs-img]{filter:none}
+.dark [data-hs-dark-only]{display:block}
+.dark [data-hs-light-only]{display:none}
+.dark [data-hs-img]{filter:grayscale(1)}
+`
+
 // ─── Root Component ──────────────────────────────────────────
 
 function HeroSceneRoot({
@@ -65,12 +78,13 @@ function HeroSceneRoot({
         containerRef: rootRef,
       }}
     >
+      <style dangerouslySetInnerHTML={{ __html: DARK_STYLES }} />
       <div
         ref={rootRef}
         className={className}
         style={{ position: 'relative', overflow: 'hidden' }}
       >
-        {/* ── Background images (no parallax — Parallax child wraps these) ── */}
+        {/* ── Background images ── */}
         <div
           data-hero-images=""
           aria-hidden="true"
@@ -90,7 +104,7 @@ function HeroSceneRoot({
               height={1080}
               priority={i === initialIndex}
               sizes="100vw"
-              className="dark:grayscale"
+              data-hs-img=""
               style={{
                 position: 'absolute',
                 inset: 0,
@@ -207,7 +221,6 @@ function Parallax({
     mouseLerp,
   ])
 
-  // Parallax is a behavior-only component — renders nothing
   return null
 }
 
@@ -229,8 +242,8 @@ function Vignette({
       {images.map((img, i) => (
         <div
           key={`vignette-light-${img.color}`}
+          data-hs-light-only=""
           aria-hidden="true"
-          className="dark:hidden"
           style={{
             position: 'absolute',
             inset: 0,
@@ -249,8 +262,8 @@ function Vignette({
       ))}
       {/* Dark mode — black vignette */}
       <div
+        data-hs-dark-only=""
         aria-hidden="true"
-        className="hidden dark:block"
         style={{
           position: 'absolute',
           inset: 0,
@@ -277,7 +290,7 @@ function Blur({
   innerRadius = 15,
   outerRadius = 55,
 }: BlurProps) {
-  useHeroScene() // validate context
+  useHeroScene()
 
   const mask = buildBlurMask({ centerX, centerY, innerRadius, outerRadius })
 
@@ -306,7 +319,7 @@ function Pattern({
   lightColor = 'rgba(0 0 0 / 0.15)',
   darkColor = 'rgba(255 255 255 / 0.1)',
 }: PatternProps) {
-  useHeroScene() // validate context
+  useHeroScene()
 
   const bgImage = (color: string) =>
     `radial-gradient(circle, ${color} ${dotSize}px, transparent ${dotSize}px)`
@@ -315,8 +328,8 @@ function Pattern({
   return (
     <>
       <div
+        data-hs-light-only=""
         aria-hidden="true"
-        className="dark:hidden"
         style={{
           position: 'absolute',
           inset: 0,
@@ -327,8 +340,8 @@ function Pattern({
         }}
       />
       <div
+        data-hs-dark-only=""
         aria-hidden="true"
-        className="hidden dark:block"
         style={{
           position: 'absolute',
           inset: 0,
@@ -345,16 +358,17 @@ function Pattern({
 // ─── DarkOverlay ─────────────────────────────────────────────
 
 function DarkOverlay({ opacity = 0.4 }: DarkOverlayProps) {
-  useHeroScene() // validate context
+  useHeroScene()
 
   return (
     <div
+      data-hs-dark-only=""
       aria-hidden="true"
-      className="pointer-events-none hidden dark:block"
       style={{
         position: 'absolute',
         inset: 0,
         zIndex: 10,
+        pointerEvents: 'none',
         backgroundColor: `rgba(0 0 0 / ${opacity})`,
       }}
     />
@@ -364,7 +378,7 @@ function DarkOverlay({ opacity = 0.4 }: DarkOverlayProps) {
 // ─── Content ─────────────────────────────────────────────────
 
 function Content({ className, children }: ContentProps) {
-  useHeroScene() // validate context
+  useHeroScene()
 
   return (
     <div
