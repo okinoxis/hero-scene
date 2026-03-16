@@ -90,6 +90,7 @@ function HeroSceneRoot({
               height={1080}
               priority={i === initialIndex}
               sizes="100vw"
+              className="dark:grayscale"
               style={{
                 position: 'absolute',
                 inset: 0,
