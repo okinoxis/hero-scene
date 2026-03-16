@@ -90,7 +90,7 @@ function HeroSceneRoot({
           aria-hidden="true"
           style={{
             position: 'absolute',
-            inset: 0,
+            inset: '-15%',
             backgroundColor: `rgb(${activeColor})`,
             transition: reducedMotion ? 'none' : 'background-color 1s ease',
           }}
@@ -141,26 +141,6 @@ function Parallax({
   const targetMouseY = useRef(0)
   const currentMouseX = useRef(0)
   const currentMouseY = useRef(0)
-
-  useEffect(() => {
-    if (reducedMotion) return
-
-    const root = containerRef.current
-    if (!root) return
-
-    const imagesEl = root.querySelector<HTMLDivElement>('[data-hero-images]')
-    if (!imagesEl) return
-
-    // Expand the images container to allow parallax overflow
-    imagesEl.style.inset = '-15%'
-    imagesEl.style.willChange = 'transform'
-
-    return () => {
-      imagesEl.style.inset = '0'
-      imagesEl.style.willChange = ''
-      imagesEl.style.transform = ''
-    }
-  }, [reducedMotion, containerRef])
 
   useEffect(() => {
     if (reducedMotion) return
