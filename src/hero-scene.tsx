@@ -44,6 +44,9 @@ function HeroSceneRoot({
       setIndex(next)
       setTimeout(() => {
         onIndexChange?.(next)
+        globalThis.dispatchEvent(
+          new CustomEvent('hero-scene-index-change', { detail: next }),
+        )
       }, 0)
     }, interval)
     return () => clearInterval(id)
@@ -353,13 +356,14 @@ function Content({ className, children }: ContentProps) {
   )
 }
 
-// ─── Compound export ─────────────────────────────────────────
+// ─── Exports ────────────────────────────────────────────────
 
-export const HeroScene = Object.assign(HeroSceneRoot, {
-  Parallax,
-  Vignette,
-  Blur,
-  Pattern,
-  DarkOverlay,
-  Content,
-})
+export {
+  HeroSceneRoot as HeroScene,
+  Parallax as HeroParallax,
+  Vignette as HeroVignette,
+  Blur as HeroBlur,
+  Pattern as HeroPattern,
+  DarkOverlay as HeroDarkOverlay,
+  Content as HeroContent,
+}
