@@ -225,10 +225,12 @@ function Vignette({
 
   return (
     <>
+      {/* Light mode — color-matched vignettes with crossfade */}
       {images.map((img, i) => (
         <div
-          key={`vignette-${img.color}`}
+          key={`vignette-light-${img.color}`}
           aria-hidden="true"
+          className="dark:hidden"
           style={{
             position: 'absolute',
             inset: 0,
@@ -245,6 +247,23 @@ function Vignette({
           }}
         />
       ))}
+      {/* Dark mode — black vignette */}
+      <div
+        aria-hidden="true"
+        className="hidden dark:block"
+        style={{
+          position: 'absolute',
+          inset: 0,
+          zIndex: 20,
+          pointerEvents: 'none',
+          background: buildVignetteGradient('0, 0, 0', {
+            centerX,
+            centerY,
+            shape,
+            stops,
+          }),
+        }}
+      />
     </>
   )
 }
