@@ -1,6 +1,6 @@
 # @okinoxis/hero-scene
 
-Compound component for cinematic hero backgrounds in Next.js — image rotation, parallax, vignettes, blur, and patterns.
+Composable components for cinematic hero backgrounds in Next.js — image rotation, parallax, vignettes, blur, and patterns. RSC-compatible, zero CSS framework dependency.
 
 ## Install
 
@@ -11,7 +11,15 @@ npm install @okinoxis/hero-scene
 ## Usage
 
 ```tsx
-import { HeroScene } from '@okinoxis/hero-scene'
+import {
+  HeroScene,
+  HeroParallax,
+  HeroVignette,
+  HeroBlur,
+  HeroPattern,
+  HeroDarkOverlay,
+  HeroContent,
+} from '@okinoxis/hero-scene'
 
 const images = [
   { src: '/karate.jpg', color: '70, 150, 220' },
@@ -20,14 +28,14 @@ const images = [
 ]
 
 <HeroScene images={images} interval={30000} className="min-h-svh">
-  <HeroScene.Parallax />
-  <HeroScene.Vignette />
-  <HeroScene.Blur />
-  <HeroScene.Pattern />
-  <HeroScene.DarkOverlay />
-  <HeroScene.Content>
+  <HeroParallax />
+  <HeroVignette />
+  <HeroBlur />
+  <HeroPattern />
+  <HeroDarkOverlay />
+  <HeroContent>
     <h1>Your headline</h1>
-  </HeroScene.Content>
+  </HeroContent>
 </HeroScene>
 ```
 
@@ -55,11 +63,24 @@ Content       z:30  — your content
 | `interval` | `number` | `30000` |
 | `transitionDuration` | `number` | `700` |
 | `className` | `string` | — |
-| `onIndexChange` | `(index: number) => void` | — |
 
 `color` is `"r, g, b"` (e.g. `"210, 100, 60"`) for CSS `color-mix()`.
 
-### `<HeroScene.Parallax>`
+#### Listening to index changes
+
+`HeroScene` dispatches a `CustomEvent` on `globalThis` whenever the active image changes. Use the exported constant to subscribe:
+
+```tsx
+import { HERO_SCENE_INDEX_EVENT } from '@okinoxis/hero-scene'
+
+useEffect(() => {
+  const handler = (e: CustomEvent<number>) => console.log(e.detail)
+  globalThis.addEventListener(HERO_SCENE_INDEX_EVENT, handler)
+  return () => globalThis.removeEventListener(HERO_SCENE_INDEX_EVENT, handler)
+}, [])
+```
+
+### `<HeroParallax>`
 
 | Prop | Type | Default |
 |------|------|---------|
@@ -68,7 +89,7 @@ Content       z:30  — your content
 | `mouseShiftY` | `number` | `15` |
 | `mouseLerp` | `number` | `0.04` |
 
-### `<HeroScene.Vignette>`
+### `<HeroVignette>`
 
 | Prop | Type | Default |
 |------|------|---------|
@@ -78,7 +99,7 @@ Content       z:30  — your content
 | `stops` | `[number, number][]` | `[[0,0]...[100,0.6]]` |
 | `transitionDuration` | `number` | `1000` |
 
-### `<HeroScene.Blur>`
+### `<HeroBlur>`
 
 | Prop | Type | Default |
 |------|------|---------|
@@ -88,7 +109,7 @@ Content       z:30  — your content
 | `innerRadius` | `number` | `15` |
 | `outerRadius` | `number` | `55` |
 
-### `<HeroScene.Pattern>`
+### `<HeroPattern>`
 
 | Prop | Type | Default |
 |------|------|---------|
@@ -97,13 +118,13 @@ Content       z:30  — your content
 | `lightColor` | `string` | `'rgba(0 0 0 / 0.15)'` |
 | `darkColor` | `string` | `'rgba(255 255 255 / 0.1)'` |
 
-### `<HeroScene.DarkOverlay>`
+### `<HeroDarkOverlay>`
 
 | Prop | Type | Default |
 |------|------|---------|
 | `opacity` | `number` | `0.4` |
 
-### `<HeroScene.Content>`
+### `<HeroContent>`
 
 | Prop | Type | Default |
 |------|------|---------|
@@ -115,9 +136,18 @@ Content       z:30  — your content
 - Pauses off-screen via Intersection Observer
 - All decorative layers are `aria-hidden`
 
+## Dark mode
+
+Dark mode activates automatically when an ancestor element has the `.dark` class (the same convention used by Tailwind, but **Tailwind is not required**). In dark mode:
+
+- Images render in grayscale
+- Vignette uses a black gradient instead of dominant colors
+- `<HeroDarkOverlay>` becomes visible
+
+
 ## Requirements
 
-React 18+, Next.js 14+, Tailwind CSS (for `dark:` variant)
+React 18+, Next.js 14+
 
 ## License
 
