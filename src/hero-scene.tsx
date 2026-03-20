@@ -78,12 +78,12 @@ function HeroSceneRoot({
         containerRef: rootRef,
       }}
     >
-      <style dangerouslySetInnerHTML={{ __html: DARK_STYLES }} />
       <div
         ref={rootRef}
         className={className}
         style={{ position: 'relative', overflow: 'hidden' }}
       >
+        <style dangerouslySetInnerHTML={{ __html: DARK_STYLES }} />
         {/* ── Background images ── */}
         <div
           data-hero-images=""

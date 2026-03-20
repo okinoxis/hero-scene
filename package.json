@@ -1,6 +1,6 @@
 {
   "name": "@okinoxis/hero-scene",
-  "version": "0.5.2",
+  "version": "0.5.3",
   "description": "Cinematic hero sections for Next.js — compound component API with image rotation, parallax, vignette overlays, blur masks, and dot patterns.",
   "type": "module",
   "main": "./dist/index.cjs",
